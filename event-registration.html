@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Event Date Registration</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #1f2a22;
+    --panel: #26332b;
+    --panel-2: #2d3b32;
+    --line: rgba(201,162,39,0.22);
+    --accent: #c9a227;
+    --accent-soft: #e4c766;
+    --weekend-bg: rgba(201,162,39,0.14);
+    --text: #f1ecdd;
+    --text-dim: #a9b3a6;
+    --danger: #c4634a;
+    --success: #7fa37a;
+    --radius: 6px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 620px;
+    margin: 0 auto;
+    padding: 48px 20px 80px;
+  }
+  header {
+    margin-bottom: 36px;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 24px;
+  }
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 2rem;
+    margin: 0 0 8px;
+    letter-spacing: -0.01em;
+  }
+  header p {
+    color: var(--text-dim);
+    margin: 0;
+    max-width: 46ch;
+  }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+  .panel h2 {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 1.15rem;
+    margin: 0 0 18px;
+  }
+  .cal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .cal-head button {
+    background: none;
+    border: 1px solid var(--line);
+    color: var(--text);
+    border-radius: var(--radius);
+    width: 34px;
+    height: 34px;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+  .cal-head button:hover { border-color: var(--accent); }
+  .cal-month {
+    font-family: 'Fraunces', serif;
+    font-size: 1.05rem;
+  }
+  .cal-legend {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+  }
+  .cal-legend .swatch {
+    width: 10px; height: 10px; border-radius: 2px;
+    background: var(--weekend-bg);
+    border: 1px solid var(--accent-soft);
+    display: inline-block;
+  }
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+  }
+  .cal-dow {
+    text-align: center;
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    padding-bottom: 6px;
+  }
+  .cal-dow.weekend { color: var(--accent-soft); }
+  .cal-day {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    border-radius: var(--radius);
+    font-size: 0.88rem;
+    cursor: pointer;
+    border: 1px solid transparent;
+    position: relative;
+    background: var(--panel-2);
+    color: var(--text);
+  }
+  .cal-day.empty { background: none; cursor: default; }
+  .cal-day.weekend { background: var(--weekend-bg); border-color: rgba(201,162,39,0.3); }
+  .cal-day.past { opacity: 0.3; cursor: not-allowed; }
+  .cal-day:not(.empty):not(.past):hover { border-color: var(--accent); }
+  .cal-day.selected { background: var(--accent); color: #1f2a22; font-weight: 600; border-color: var(--accent); }
+  .cal-day .dot {
+    width: 4px; height: 4px; border-radius: 50%;
+    background: var(--accent-soft);
+    margin-top: 2px;
+  }
+  .cal-day.selected .dot { background: #1f2a22; }
+  .selected-info {
+    margin-top: 14px;
+    font-size: 0.88rem;
+    color: var(--text-dim);
+    min-height: 1.4em;
+  }
+  .selected-info strong { color: var(--accent-soft); }
+  .slot-section {
+    display: none;
+    margin-top: 18px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+  }
+  .slot-section.show { display: block; }
+  .slot-section .slot-label {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+  }
+  .slot-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .slot-btn {
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    color: var(--text);
+    padding: 9px 14px;
+    border-radius: var(--radius);
+    font-size: 0.85rem;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .slot-btn:hover { border-color: var(--accent); }
+  .slot-btn.selected { background: var(--accent); color: #1f2a22; border-color: var(--accent); font-weight: 600; }
+  .slot-btn .count { opacity: 0.75; font-size: 0.78rem; margin-left: 4px; }
+  label {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+    margin-top: 16px;
+  }
+  label:first-of-type { margin-top: 0; }
+  input {
+    width: 100%;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    color: var(--text);
+    padding: 11px 12px;
+    border-radius: var(--radius);
+    font-size: 0.95rem;
+    font-family: inherit;
+  }
+  input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  input:disabled {
+    opacity: 0.55;
+  }
+  .field-hint {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    margin-top: 5px;
+  }
+  .field-error {
+    font-size: 0.78rem;
+    color: #e8a494;
+    margin-top: 5px;
+    display: none;
+  }
+  .field-error.show { display: block; }
+  .row-with-action {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+  }
+  .row-with-action input { flex: 1; }
+  button.secondary {
+    margin-top: 0;
+    white-space: nowrap;
+    background: transparent;
+    color: var(--accent-soft);
+    border: 1px solid var(--line);
+    padding: 0 16px;
+    border-radius: var(--radius);
+    font-size: 0.85rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  button.secondary:hover:not(:disabled) { border-color: var(--accent); }
+  button.secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+  button.link {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    text-decoration: underline;
+    font-size: 0.8rem;
+    cursor: pointer;
+    padding: 0;
+    margin-top: 8px;
+    font-family: inherit;
+  }
+  button.submit {
+    margin-top: 22px;
+    width: 100%;
+    background: var(--accent);
+    color: #1f2a22;
+    border: none;
+    padding: 13px;
+    border-radius: var(--radius);
+    font-size: 0.95rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  button.submit:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  button.submit:not(:disabled):hover { background: var(--accent-soft); }
+  .status {
+    margin-top: 16px;
+    padding: 12px 14px;
+    border-radius: var(--radius);
+    font-size: 0.9rem;
+    display: none;
+  }
+  .status.show { display: block; }
+  .status.success { background: rgba(127,163,122,0.15); border: 1px solid var(--success); color: var(--success); }
+  .status.error { background: rgba(196,99,74,0.15); border: 1px solid var(--danger); color: #e8a494; }
+  .status.info { background: rgba(201,162,39,0.12); border: 1px solid var(--line); color: var(--text-dim); }
+  .code-section {
+    display: none;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+  }
+  .code-section.show { display: block; }
+  .setup-banner {
+    background: rgba(196,99,74,0.12);
+    border: 1px solid var(--danger);
+    color: #e8a494;
+    padding: 14px 16px;
+    border-radius: var(--radius);
+    font-size: 0.85rem;
+    margin-bottom: 24px;
+  }
+  footer {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 0.75rem;
+    margin-top: 40px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Reserve a date</h1>
+    <p>Pick a date to attend, choose a time, and register. Families are welcome to join others already registered for the same slot.</p>
+  </header>
+
+  <div id="setupBanner" class="setup-banner" style="display:none">
+    This page isn't connected to a database yet. Set SCRIPT_URL near the top of the script to your deployed Apps Script Web App URL.
+  </div>
+
+  <div class="panel">
+    <h2>Calendar</h2>
+    <div class="cal-head">
+      <button id="prevMonth" aria-label="Previous month">&#8249;</button>
+      <div class="cal-month" id="calMonthLabel"></div>
+      <button id="nextMonth" aria-label="Next month">&#8250;</button>
+    </div>
+    <div class="cal-legend"><span class="swatch"></span> Saturday &amp; Sunday</div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="selected-info" id="selectedInfo">No date selected yet.</div>
+
+    <div class="slot-section" id="slotSection">
+      <div class="slot-label">Choose a time</div>
+      <div class="slot-grid" id="slotGrid"></div>
+      <div class="selected-info" id="reservedNames"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Your details</h2>
+    <form id="bookingForm">
+      <label for="fullName">Full name</label>
+      <input type="text" id="fullName" required autocomplete="name">
+
+      <label for="email">Email address</label>
+      <div class="row-with-action">
+        <input type="email" id="email" required autocomplete="email" placeholder="you@example.com">
+        <button type="button" class="secondary" id="sendCodeBtn" disabled>Send code</button>
+      </div>
+      <div class="field-error" id="emailError">Enter a valid email address.</div>
+      <div class="field-hint">Click "Send code" — a field to enter your 6-digit code will appear below once it's emailed to you.</div>
+
+      <label for="whatsapp">WhatsApp number</label>
+      <input type="tel" id="whatsapp" required autocomplete="tel" placeholder="Just the digits, e.g. 5551234567">
+      <div class="field-error" id="whatsappError">Enter a valid phone number.</div>
+
+      <label for="familyCount">Number attending (including you)</label>
+      <input type="number" id="familyCount" min="1" value="1" required>
+
+      <label for="donation">Donation amount (optional)</label>
+      <input type="number" id="donation" min="0" step="any" placeholder="e.g. 500">
+      <div class="field-hint">If you'd like to contribute toward the event, enter an amount. This is a pledge for the organizers to follow up on, not an online payment.</div>
+
+      <div class="code-section" id="codeSection">
+        <label for="verifyCode">Verification code</label>
+        <input type="text" id="verifyCode" inputmode="numeric" maxlength="6" placeholder="6-digit code from your email">
+        <button type="button" class="link" id="changeEmailBtn">Use a different email</button>
+      </div>
+
+      <button type="button" class="submit" id="actionBtn" disabled>Select a date to continue</button>
+      <div class="status" id="statusBox"></div>
+    </form>
+  </div>
+
+  <footer>Registrations are stored in a shared list — the same date and time can be booked by multiple families.</footer>
+</div>
+
+<script>
+  // ---------------------------------------------------------------
+  // CONFIG — edit these before publishing
+  // ---------------------------------------------------------------
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxU_oLPXzqNtW7N6cGs6DlvOLMlnZ1ppscffyIPHpMSVjIZOoQ8t9tJHJ384dABAONKrg/exec";
+  // Used only if the "TimeSlots" tab in the sheet is empty or unreachable.
+  const FALLBACK_TIME_SLOTS = [
+    "8:00 AM – 9:00 AM",
+    "9:00 AM – 10:00 AM",
+    "10:00 AM – 11:00 AM",
+    "11:00 AM – 12:00 PM"
+  ];
+  // ---------------------------------------------------------------
+
+  const state = {
+    viewYear: new Date().getFullYear(),
+    viewMonth: new Date().getMonth(),
+    selectedDate: null,
+    selectedSlot: null,
+    bookings: [], // [{eventDate, slot, name, familyCount}]
+    timeSlots: FALLBACK_TIME_SLOTS,
+    codeSent: false,
+    verifiedEmail: null,
+    resendCooldownUntil: 0
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const phoneRegex = /^[0-9]{7,15}$/;
+
+  function cleanPhoneInput(raw) {
+    return raw.replace(/[^0-9]/g, ''); // strips spaces, dashes, parens, plus signs — digits only
+  }
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function isoDate(d) { return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+  function startOfToday() { const d = new Date(); d.setHours(0,0,0,0); return d; }
+
+  function renderCalendar() {
+    const grid = $('calGrid');
+    grid.innerHTML = '';
+    const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+    $('calMonthLabel').textContent = `${monthNames[state.viewMonth]} ${state.viewYear}`;
+
+    ['S','M','T','W','T','F','S'].forEach((d, i) => {
+      const el = document.createElement('div');
+      el.className = 'cal-dow' + ((i === 0 || i === 6) ? ' weekend' : '');
+      el.textContent = d;
+      grid.appendChild(el);
+    });
+
+    const firstDay = new Date(state.viewYear, state.viewMonth, 1);
+    const startOffset = firstDay.getDay();
+    const daysInMonth = new Date(state.viewYear, state.viewMonth + 1, 0).getDate();
+    const today = startOfToday();
+
+    const countsByDate = {};
+    state.bookings.forEach(b => {
+      countsByDate[b.eventDate] = (countsByDate[b.eventDate] || 0) + 1;
+    });
+
+    for (let i = 0; i < startOffset; i++) {
+      const el = document.createElement('div');
+      el.className = 'cal-day empty';
+      grid.appendChild(el);
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateObj = new Date(state.viewYear, state.viewMonth, day);
+      const iso = isoDate(dateObj);
+      const dow = dateObj.getDay();
+      const el = document.createElement('div');
+      el.className = 'cal-day' + ((dow === 0 || dow === 6) ? ' weekend' : '');
+      el.textContent = day;
+
+      if (dateObj < today) {
+        el.classList.add('past');
+      } else {
+        el.addEventListener('click', () => selectDate(iso));
+        if (countsByDate[iso]) {
+          const dot = document.createElement('div');
+          dot.className = 'dot';
+          el.appendChild(dot);
+        }
+      }
+      if (iso === state.selectedDate) el.classList.add('selected');
+      grid.appendChild(el);
+    }
+  }
+
+  function selectDate(iso) {
+    state.selectedDate = iso;
+    state.selectedSlot = null;
+    renderCalendar();
+
+    const count = state.bookings.filter(b => b.eventDate === iso)
+      .reduce((sum, b) => sum + (parseInt(b.familyCount) || 1), 0);
+    const dateLabel = new Date(iso + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    $('selectedInfo').innerHTML = count > 0
+      ? `<strong>${dateLabel}</strong> — ${count} ${count === 1 ? 'person' : 'people'} already registered across all times.`
+      : `<strong>${dateLabel}</strong> — no one registered yet. Be the first.`;
+
+    renderSlots(iso);
+    updateActionButton();
+  }
+
+  function renderSlots(iso) {
+    const slotGrid = $('slotGrid');
+    slotGrid.innerHTML = '';
+    state.timeSlots.forEach(slot => {
+      const slotBookings = state.bookings.filter(b => b.eventDate === iso && b.slot === slot);
+      const count = slotBookings.reduce((sum, b) => sum + (parseInt(b.familyCount) || 1), 0);
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'slot-btn' + (state.selectedSlot === slot ? ' selected' : '');
+      btn.innerHTML = count > 0
+        ? `${slot} <span class="count">· ${count} going</span>`
+        : slot;
+      btn.addEventListener('click', () => {
+        state.selectedSlot = slot;
+        renderSlots(iso);
+        updateActionButton();
+      });
+      slotGrid.appendChild(btn);
+    });
+    $('slotSection').classList.add('show');
+    renderReservedNames(iso);
+  }
+
+  function renderReservedNames(iso) {
+    const box = $('reservedNames');
+    if (!state.selectedSlot) {
+      box.textContent = '';
+      return;
+    }
+    const names = state.bookings
+      .filter(b => b.eventDate === iso && b.slot === state.selectedSlot)
+      .map(b => (parseInt(b.familyCount) > 1) ? `${b.name} (+${parseInt(b.familyCount) - 1})` : b.name);
+
+    box.innerHTML = names.length > 0
+      ? `<strong>Already registered for ${state.selectedSlot}:</strong> ${names.join(', ')}`
+      : `No one registered yet for ${state.selectedSlot}. Be the first.`;
+  }
+
+  $('prevMonth').addEventListener('click', () => {
+    state.viewMonth--;
+    if (state.viewMonth < 0) { state.viewMonth = 11; state.viewYear--; }
+    renderCalendar();
+  });
+  $('nextMonth').addEventListener('click', () => {
+    state.viewMonth++;
+    if (state.viewMonth > 11) { state.viewMonth = 0; state.viewYear++; }
+    renderCalendar();
+  });
+
+  async function loadBookings() {
+    try {
+      const res = await fetch(`${SCRIPT_URL}?action=list`);
+      const data = await res.json();
+      state.bookings = Array.isArray(data) ? data : [];
+    } catch (err) {
+      state.bookings = [];
+    }
+    renderCalendar();
+    if (state.selectedDate) renderSlots(state.selectedDate);
+  }
+
+  async function loadTimeSlots() {
+    try {
+      const res = await fetch(`${SCRIPT_URL}?action=slots`);
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        state.timeSlots = data;
+      }
+    } catch (err) {
+      // keep FALLBACK_TIME_SLOTS
+    }
+    if (state.selectedDate) renderSlots(state.selectedDate);
+  }
+
+  function showStatus(kind, message) {
+    const box = $('statusBox');
+    box.className = `status show ${kind}`;
+    box.textContent = message;
+  }
+  function clearStatus() {
+    $('statusBox').className = 'status';
+  }
+
+  function updateActionButton() {
+    const btn = $('actionBtn');
+    if (!state.selectedDate) {
+      btn.disabled = true;
+      btn.textContent = 'Select a date to continue';
+    } else if (!state.selectedSlot) {
+      btn.disabled = true;
+      btn.textContent = 'Select a time to continue';
+    } else if (!state.codeSent) {
+      btn.disabled = true;
+      btn.textContent = 'Send a code to your email first';
+    } else {
+      btn.disabled = false;
+      btn.textContent = 'Confirm & reserve';
+    }
+  }
+
+  $('email').addEventListener('input', () => {
+    const email = $('email').value.trim();
+    const valid = emailRegex.test(email);
+    $('emailError').classList.toggle('show', email.length > 0 && !valid);
+    $('sendCodeBtn').disabled = !valid || Date.now() < state.resendCooldownUntil;
+  });
+
+  $('whatsapp').addEventListener('input', () => {
+    const field = $('whatsapp');
+    const cleaned = cleanPhoneInput(field.value);
+    if (cleaned !== field.value) field.value = cleaned;
+    $('whatsappError').classList.toggle('show', cleaned.length > 0 && !phoneRegex.test(cleaned));
+  });
+
+  $('sendCodeBtn').addEventListener('click', async () => {
+    const name = $('fullName').value.trim();
+    const email = $('email').value.trim();
+    const whatsapp = $('whatsapp').value.trim();
+    if (!name) { showStatus('error', 'Enter your name first.'); return; }
+    if (!phoneRegex.test(whatsapp)) { showStatus('error', 'Enter a valid WhatsApp number first.'); return; }
+    if (!emailRegex.test(email)) { showStatus('error', 'Enter a valid email address first.'); return; }
+
+    const btn = $('sendCodeBtn');
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
+    clearStatus();
+
+    try {
+      const res = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'sendCode', contact: email })
+      });
+      const result = await res.json();
+
+      if (result.success) {
+        state.codeSent = true;
+        state.verifiedEmail = email;
+        $('email').disabled = true;
+        $('codeSection').classList.add('show');
+        showStatus('success', `A verification code was sent to ${email}. Enter it below to confirm your reservation.`);
+        state.resendCooldownUntil = Date.now() + 30000;
+        btn.textContent = 'Resend in 30s';
+        let secondsLeft = 30;
+        const interval = setInterval(() => {
+          secondsLeft--;
+          if (secondsLeft <= 0) {
+            clearInterval(interval);
+            btn.disabled = false;
+            btn.textContent = 'Resend code';
+          } else {
+            btn.textContent = `Resend in ${secondsLeft}s`;
+          }
+        }, 1000);
+      } else if (result.reason === 'cooldown') {
+        const nextDate = new Date(result.nextEligible).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
+        showStatus('error', `This email already has a recent registration. It can register again starting ${nextDate}.`);
+        btn.disabled = false;
+        btn.textContent = 'Send code';
+      } else {
+        showStatus('error', result.message || 'Could not send the code. Please try again.');
+        btn.disabled = false;
+        btn.textContent = 'Send code';
+      }
+    } catch (err) {
+      showStatus('error', 'Could not reach the registration service. Please try again shortly.');
+      btn.disabled = false;
+      btn.textContent = 'Send code';
+    }
+    updateActionButton();
+  });
+
+  $('changeEmailBtn').addEventListener('click', () => {
+    state.codeSent = false;
+    state.verifiedEmail = null;
+    $('email').disabled = false;
+    $('email').value = '';
+    $('verifyCode').value = '';
+    $('codeSection').classList.remove('show');
+    $('sendCodeBtn').disabled = true;
+    $('sendCodeBtn').textContent = 'Send code';
+    clearStatus();
+    updateActionButton();
+  });
+
+  $('actionBtn').addEventListener('click', async () => {
+    if (!state.selectedDate || !state.selectedSlot || !state.codeSent) return;
+
+    const name = $('fullName').value.trim();
+    const email = state.verifiedEmail;
+    const whatsapp = $('whatsapp').value.trim();
+    const familyCount = parseInt($('familyCount').value) || 1;
+    const donation = $('donation').value.trim();
+    const code = $('verifyCode').value.trim();
+
+    if (!phoneRegex.test(whatsapp)) { showStatus('error', 'Enter a valid WhatsApp number.'); return; }
+    if (!code) { showStatus('error', 'Enter the verification code from your email.'); return; }
+
+    const btn = $('actionBtn');
+    btn.disabled = true;
+    btn.textContent = 'Confirming…';
+    clearStatus();
+
+    try {
+      const res = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'book',
+          name,
+          contact: email,
+          whatsapp,
+          familyCount,
+          donation: donation || 0,
+          eventDate: state.selectedDate,
+          slot: state.selectedSlot,
+          code
+        })
+      });
+      const result = await res.json();
+
+      if (result.success) {
+        const dateLabel = new Date(state.selectedDate + 'T00:00:00').toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
+        showStatus('success', `You're registered for ${dateLabel}, ${state.selectedSlot}. See you there.`);
+        $('bookingForm').reset();
+        $('email').disabled = false;
+        $('codeSection').classList.remove('show');
+        $('sendCodeBtn').disabled = true;
+        $('sendCodeBtn').textContent = 'Send code';
+        $('familyCount').value = 1;
+        state.selectedDate = null;
+        state.selectedSlot = null;
+        state.codeSent = false;
+        state.verifiedEmail = null;
+        $('slotSection').classList.remove('show');
+        await loadBookings();
+        updateActionButton();
+      } else if (result.reason === 'invalid_code') {
+        showStatus('error', 'That code is incorrect or has expired. Request a new one.');
+        btn.disabled = false;
+        btn.textContent = 'Confirm & reserve';
+      } else if (result.reason === 'cooldown') {
+        const nextDate = new Date(result.nextEligible).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
+        showStatus('error', `This email already has a recent registration. It can register again starting ${nextDate}.`);
+        btn.disabled = false;
+        btn.textContent = 'Confirm & reserve';
+      } else {
+        showStatus('error', result.message || 'Something went wrong. Please try again.');
+        btn.disabled = false;
+        btn.textContent = 'Confirm & reserve';
+      }
+    } catch (err) {
+      showStatus('error', 'Could not reach the registration service. Please try again shortly.');
+      btn.disabled = false;
+      btn.textContent = 'Confirm & reserve';
+    }
+  });
+
+  if (SCRIPT_URL.includes('PASTE_YOUR')) {
+    $('setupBanner').style.display = 'block';
+  }
+
+  renderCalendar();
+  loadBookings();
+  loadTimeSlots();
+</script>
+</body>
+</html>
